@@ -21,41 +21,54 @@ from yahoofinancials import YahooFinancials
 TICKER_BTC = "BTC-USD"
 TICKER_NASDAQ = "^IXIC"
 TICKER_SNP = "^GSPC"
-START_DATE = "2014-09-17"
+START_DATE = "2014-01-01"
 END_DATE = "2022-03-20"
 
 pd.set_option('display.max_columns', 7)
+pd.set_option('display.max_rows', 100)
 """Get Data"""
 
-
-"""BTC"""
+# """BTC"""
 print("BTC")
 btc_financials = YahooFinancials(TICKER_BTC)
 data=btc_financials.get_historical_price_data(START_DATE, END_DATE, "daily")
 btc_df = pd.DataFrame(data[TICKER_BTC]['prices'])
-btc_df = btc_df.drop('date', axis=1).set_index('formatted_date')
-#print(btc_df.head())
-
-"""NASDAQ"""
-print("NASDAQ")
-nasdaq_financials = YahooFinancials(TICKER_NASDAQ)
-data=nasdaq_financials.get_historical_price_data(START_DATE, END_DATE, "daily")
-nasdaq_df = pd.DataFrame(data[TICKER_NASDAQ]['prices'])
-nasdaq_df = nasdaq_df.drop('date', axis=1).set_index('formatted_date')
-#print(nasdaq_df.head())
 
 """S&P 500"""
-print("SNP")
+print("S&P 500")
 snp_financials = YahooFinancials(TICKER_SNP)
 data=snp_financials.get_historical_price_data(START_DATE, END_DATE, "daily")
 snp_df = pd.DataFrame(data[TICKER_SNP]['prices'])
-snp_df = snp_df.drop('date', axis=1).set_index('formatted_date')
-#print(snp_df.head())
 
 
-"""Drop unecessarry columns"""
-to_drop = ["high","low","open","adjclose","volume"]
-btc_df=  btc_df.drop(to_drop, axis=1)
-nasdaq_df=  nasdaq_df.drop(to_drop, axis=1)
-snp_df=  snp_df.drop(to_drop, axis=1)
-print(btc_df)
+"""Drop unnecessary columns and rename others"""
+to_drop = ['high', 'low', 'open', 'volume', 'adjclose', 
+       'formatted_date']
+snp_df.date = pd.to_datetime(snp_df.formatted_date)
+snp_df = snp_df.rename(columns = {"close":"price"})
+snp_df=  snp_df.drop(to_drop, axis=1).set_index('date')
+
+btc_df.date = pd.to_datetime(btc_df.formatted_date)
+btc_df = btc_df.rename(columns = {"close":"price"})
+btc_df=  btc_df.drop(to_drop, axis=1).set_index('date')
+
+"""Set 'date' as index"""
+
+#Remove duplicated indexes/dates for S&P 500
+if snp_df.index.duplicated().any():
+    snp_df = snp_df.loc[~snp_df.index.duplicated(), :]
+snp_df= snp_df.reindex(pd.date_range(start=min(snp_df.index), end=max(snp_df.index), freq='D'))
+snp_df.index.name = 'date'
+
+#Remove duplicated indexes/dates for BTC
+if btc_df.index.duplicated().any():
+    btc_df = btc_df.loc[~btc_df.index.duplicated(), :]
+btc_df= btc_df.reindex(pd.date_range(start=min(btc_df.index), end=max(btc_df.index), freq='D'))
+btc_df.index.name = 'date'
+
+print(len(btc_df.index))
+print(len(snp_df.index))
+
+print(btc_df.price.isnull().sum())
+print(snp_df.price.isnull().sum())
+
