@@ -53,7 +53,26 @@ class lstm_model:
         y = np.array(y)
         return x, y
     
+    """
+    We will train our multivariate regression based on a three-dimensional data structure. The first dimension 
+    is the sequences, the second dimension is the time steps (mini-batches), and the third dimension is the
+    features.
+    
+    An essential step in time series prediction is to slice the data into multiple input data sequences
+    with associated target values. For this process, we use a sliding windows algorithm. 
+    This algorithm moves a window through the time series data, adding a sequence of multiple data points 
+    to the input data with each step. In addition, the algorithm stores the target value (daily Closing Price)
+    following this sequence in a separate target data set. Then the algorithm pushes the window one step 
+    further and repeats these activities. In this way, the algorithm creates a data set with many input 
+    sequences (mini-batches), each with a corresponding target value in the target record. This process 
+    applies both to the training and the test data.
+    
+    We will apply the sliding window approach to our data. The result is a training set (x_train)
+    that contains 2258 input sequences, and each has 50 steps and N features. The corresponding target
+    dataset (y_train) contains 2258 target values.
+    """
     def split(self):
+        print('Splitting data into training and test set..')
         # Set the sequence length - this is the timeframe used to make a single prediction
         sequence_length = 50
         
@@ -68,7 +87,8 @@ class lstm_model:
         # Generate training data and test data
         x_train, y_train = self.partition_dataset(sequence_length, train_data)
         x_test, y_test = self.partition_dataset(sequence_length, test_data)
-        
+        print(f'Our training set contains {len(y_train)} days')
+        print(f'Our test set contains {len(y_test)} days')
         return x_train, y_train, x_test, y_test
     
     
@@ -86,20 +106,23 @@ class lstm_model:
         # Compile the model
         model.compile(optimizer='adam', loss='mse')
         
+        print(model.summary())
+        
         return model
     
     def train(self):
         # Training the model
         epochs = 50
         batch_size = 16
-        #early_stop = EarlyStopping(monitor='loss', patience=5, verbose=1)
+        validation_split = 0.1
+        print(f'Training model using : {epochs} epochs, {batch_size} batch-size, {validation_split*100}% validation set from the training set size')
         history = self.model.fit(self.x_train, self.y_train, 
                             batch_size=batch_size, 
                             epochs=epochs,
-                            validation_data=(self.x_test,self.y_test)
+                            validation_split = validation_split,
                            )
                         
-                        #callbacks=[early_stop])
+                        #)
         # Plot training & validation loss values
         fig, ax = plt.subplots(figsize=(20, 10), sharex=True)
         plt.plot(history.history["loss"])

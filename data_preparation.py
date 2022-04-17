@@ -38,7 +38,7 @@ class historical_data_collector:
         data=yf.get_historical_price_data(self.start_date, self.end_date, "daily")
         df = pd.DataFrame(data[ticker]['prices']) 
         
-        #rename close column to price
+        #rename close column to ticker name
         df = df.rename(columns = {"close":name})
         
         #Put all unecessarry columns in an array
